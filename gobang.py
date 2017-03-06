@@ -80,9 +80,6 @@ def makeBoard(board_size):
             row.append(EMPTY)
         board.append(row)
 
-#check if win/draw program
-#read from stdin for move
-#pick random move
 
 def is_empty(column, row):
     if board[row][column] == EMPTY:
