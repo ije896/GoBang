@@ -16,7 +16,20 @@ board = []
 PLAYER = None
 OPPONENT = None
 curr_turn = None
+ROOT = None
+choice = None
+nextmove = None
 
+#class defs
+class Node:
+    def __init__(self):
+        self.position = []
+        self.heuristic = -9999
+        self.children = None #array of nodes
+        self.total_heuristic = None
+
+
+#funcition defs
 #argument parsing
 def parse():
     global board_size
@@ -33,8 +46,8 @@ def parse():
     board_size = args.n
     if board_size == None:
         board_size = 11
-    if board_size < 5:
-        exit(1, "Must use board at least 5x5 in size")
+    if board_size < 5 or board_size >26:
+        exit(1, "Must use board between 5 and 26 in size")
     if args.l:
         PLAYER = 7
         OPPONENT = 9
@@ -87,6 +100,7 @@ def is_empty(column, row):
     else:
         return False
 
+#computer's move
 def rand_move():
     column = random.randint(0, board_size-1)
     row = random.randint(0, board_size-1)
@@ -97,6 +111,7 @@ def rand_move():
         correct_move = is_empty(column, row)
     board[row][column] = curr_turn
 
+#read player's move
 def read_move():
     move = raw_input("Enter move: \n")
     column = ord(move[0]) - 97
@@ -108,7 +123,51 @@ def read_move():
     board[row][column] = curr_turn
 
 
+def minimax(node):
+    global choice
+    maxtotal = -99999
+    for child in range(0, len(node.children)):
+        curr = node.children[child]
+        submax = curr.children[0]
+        for subchild in range(0, len(curr.children)):
+            if curr.children[subchild].heuristic > submax.heuristic:
+                submax = curr.children[subchild]
+        curr.total_heuristic = submax.heuristic - curr.heuristic
+        if curr.total_heuristic > maxtotal:
+            maxtotal = curr.total_heuristic
+            choice = curr
+    total_move_value = node.heuristic - maxtotal
+    return total_move_value
 
+
+def next_move(possible_moves):
+    moves = {}
+    for move in possible_moves:
+        cost = minimax(move)
+        moves[move] = cost
+    max = -999999
+    best_move = None
+    for key, value in moves.iteritems():
+        if value>max:
+            best_move = key
+            max = value
+    return best_move
+
+
+
+
+
+def evaluateBoard(board):
+
+def findPossibleMoves():
+    for i in range(0, board_size):
+        for j in range(0, board_size):
+            if is_empty(i, j):
+
+
+
+#calculate heuristics
+#determine possible moves
 
 def main():
     global EMPTY
