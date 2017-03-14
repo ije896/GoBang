@@ -24,6 +24,7 @@ curr_turn = None
 ROOT = None
 choice = None
 nextmove = None
+numTurns = 0
 
 #class defs
 class Node:
@@ -54,12 +55,12 @@ def parse():
     if board_size < 5 or board_size >26:
         exit(1, "Must use board between 5 and 26 in size")
     if args.l:
-        PLAYER = 7
-        OPPONENT = 9
+        PLAYER = DARK
+        OPPONENT = LIGHT
         curr_turn = PLAYER
     else:
-        OPPONENT = 7
-        PLAYER = 9
+        OPPONENT = DARK
+        PLAYER = LIGHT
         curr_turn = OPPONENT
 
 
@@ -115,17 +116,20 @@ def rand_move():
         row = random.randint(0, board_size-1)
         correct_move = is_empty(column, row)
     board[row][column] = curr_turn
+    move_played = str(unichr(column + 97)) + str(row + 1)
+    print "Move played: ", move_played
 
 #read player's move
 def read_move():
-    move = raw_input("Enter move: \n")
+    move = raw_input("Enter move: ")
     column = ord(move[0]) - 97
     row = int(move[1:])-1
     while not is_empty(column, row):
-        move = raw_input("Incorrect move. Try again\n")
+        move = raw_input("Incorrect move. Try again ")
         column = ord(move[0]) - 97
         row = int(move[1:]) - 1
     board[row][column] = curr_turn
+    print "Move played: ", move
 
 
 def minimax(node):
@@ -136,28 +140,40 @@ def minimax(node):
     #calulate heuristics for game tree of depth 2
     row = node.position[0]
     col = node.position[1]
+    #print "entered minimax at pos: ", row, ", ", col
     board[row][col] = PLAYER
     node.heuristic = calculate_runs_value(PLAYER)
+    #print "calculate_runs_value(PLAYER): ", calculate_runs_value(PLAYER)
     node.children = findPossibleMoves()
 
     for child in range(len(node.children)):
         ch_row = node.children[child].position[0]
         ch_col = node.children[child].position[1]
         board[ch_row][ch_col] = OPPONENT
+        #print "board for depth 1 search: "
+        #print_board()
+        #print "calculate_runs_value(OPPONENT): ", calculate_runs_value(OPPONENT)
         node.children[child].heuristic = calculate_runs_value(OPPONENT)
-
+        #print "node.children[child].position: ", node.children[child].position
+        #print node.children[child].heuristic
+        #if node.children[child].heuristic > 9999:
+        #    print "Node at depth 1, position: ", node.children[child].position
+        """
         node.children[child].children = findPossibleMoves()
+
         for subchild in range(len(node.children[child].children)):
             subch_row = node.children[child].children[subchild].position[0]
             subch_col = node.children[child].children[subchild].position[1]
             board[subch_row][subch_col] = PLAYER
             node.children[child].children[subchild].heuristic = calculate_runs_value(PLAYER)
             board[subch_row][subch_col] = EMPTY
+            """
         board[ch_row][ch_col] = EMPTY
     board[row][col] = EMPTY
 
     opp_max = 999999
     temp = 0
+    """
     for child_ndx in range(0, len(node.children)):
         curr = node.children[child_ndx]
 
@@ -167,8 +183,14 @@ def minimax(node):
 
             if (temp < opp_max):
                 opp_max = temp
-
     node.total_heuristic = node.heuristic + opp_max
+    return node.total_heuristic
+    """
+    child_sum = 0
+    for index in range(0, len(node.children)):
+        curr = node.children[index]
+        child_sum+= curr.heuristic
+    node.total_heuristic = node.heuristic - child_sum
     return node.total_heuristic
 
 
@@ -209,6 +231,8 @@ def next_move():
     row = best_move[0]
     col = best_move[1]
     board[row][col] = curr_turn
+    move_played = str(unichr(col+97)) + str(row+1)
+    print "Move played: ", move_played
 
 
 def findPossibleMoves():
@@ -252,7 +276,7 @@ def no_neighbors_within_n(node, n):
 def calculate_runs_value(me):
 
    player = 0
-   if (me):
+   if (me == PLAYER):
        player = PLAYER
    else:
        player = OPPONENT
@@ -332,26 +356,43 @@ def next_pos(pos, dir):
 
    return n_pos
 
+def check_if_draw():
+    for i in range(board_size):
+        for j in range(board_size):
+            if is_empty(j, i):
+                return False
+    return True
+
+def is_over():
+    if numTurns < board_size * board_size:
+        return False
+    return True
+
+
+
 def main():
     global EMPTY
     global curr_turn
+    global numTurns
     parse()
     makeBoard(board_size)
     print_board()
-    while True: #while game is in play
+    while not is_over(): #while game is in play
         if curr_turn == PLAYER:
-
             possible_moves = findPossibleMoves()
             for move in possible_moves:
                 print "Position: ", move.position
                 cost = minimax(move)
                 print "Cost: ", cost
+
             next_move()
             print_board()
             curr_turn = OPPONENT
+            numTurns+=1
         if curr_turn == OPPONENT:
             read_move()
             print_board()
             curr_turn = PLAYER
+            numTurns+=1
 
 main()
