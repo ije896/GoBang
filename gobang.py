@@ -9,6 +9,11 @@ import random
 DARK = 9
 LIGHT = 7
 EMPTY = 0
+valid_neighbor_distance = 1
+
+# run calculation const
+INVALID = -42
+dirs = ["left", "up-left", "up", "up-right", "right", "down-right", "down", "down-left"]
 
 #var inits
 board_size = None
@@ -22,10 +27,10 @@ nextmove = None
 
 #class defs
 class Node:
-    def __init__(self):
-        self.position = []
+    def __init__(self, x, y):
+        self.position = (x, y) #tuples are immutable
         self.heuristic = -9999
-        self.children = None #array of nodes
+        self.children = None #array of nodes of proceeding possible moves
         self.total_heuristic = None
 
 
@@ -126,6 +131,51 @@ def read_move():
 def minimax(node):
     global choice
     maxtotal = -99999
+    #modify board, calculate heuristic
+
+    #calulate heuristics for game tree of depth 2
+    row = node.position[0]
+    col = node.position[1]
+    board[row][col] = PLAYER
+    node.heuristic = calculate_runs_value(PLAYER)
+    node.children = findPossibleMoves()
+
+    for child in range(len(node.children)):
+        ch_row = node.children[child].position[0]
+        ch_col = node.children[child].position[1]
+        board[ch_row][ch_col] = OPPONENT
+        node.children[child].heuristic = calculate_runs_value(OPPONENT)
+
+        node.children[child].children = findPossibleMoves()
+        for subchild in range(len(node.children[child].children)):
+            subch_row = node.children[child].children[subchild].position[0]
+            subch_col = node.children[child].children[subchild].position[1]
+            board[subch_row][subch_col] = PLAYER
+            node.children[child].children[subchild].heuristic = calculate_runs_value(PLAYER)
+            board[subch_row][subch_col] = EMPTY
+        board[ch_row][ch_col] = EMPTY
+    board[row][col] = EMPTY
+
+    opp_max = 999999
+    temp = 0
+    for child_ndx in range(0, len(node.children)):
+        curr = node.children[child_ndx]
+
+        for depth2_ndx in range(0, len(curr.children)):
+            temp = -1 * curr.heuristic
+            temp = temp + curr.children[depth2_ndx].heuristic
+
+            if (temp < opp_max):
+                opp_max = temp
+
+    node.total_heuristic = node.heuristic + opp_max
+    return node.total_heuristic
+
+
+
+
+    """
+    #calculate total heuristic for move
     for child in range(0, len(node.children)):
         curr = node.children[child]
         submax = curr.children[0]
@@ -136,38 +186,151 @@ def minimax(node):
         if curr.total_heuristic > maxtotal:
             maxtotal = curr.total_heuristic
             choice = curr
-    total_move_value = node.heuristic - maxtotal
+    total_move_value = node.heuristic + maxtotal
+
     return total_move_value
+     """
 
 
-def next_move(possible_moves):
+def next_move():
+    #if empty board, go to center of board
+    global curr_turn
     moves = {}
-    for move in possible_moves:
+    possible_moves = findPossibleMoves()
+    for move in possible_moves: #requires that move be a node in the list possible moves
         cost = minimax(move)
-        moves[move] = cost
+        moves[move.position] = cost
     max = -999999
     best_move = None
     for key, value in moves.iteritems():
         if value>max:
             best_move = key
             max = value
-    return best_move
+    row = best_move[0]
+    col = best_move[1]
+    board[row][col] = curr_turn
 
-
-
-
-
-def evaluateBoard(board):
 
 def findPossibleMoves():
+    #find empty squares,
+    #create node for them
+    #add them to the list
+    #create lower admissibility for addition to list
+    possible_moves = []
+    global valid_neighbor_distance
     for i in range(0, board_size):
         for j in range(0, board_size):
-            if is_empty(i, j):
+            if is_empty(j, i):                              #try hardcoding this DELETE MY NOTE ISAIAH
+                node = Node(i, j)
+                node.heuristic = -9999 #TODO, calculate runs, add children nodes
+                possible_moves.append(node)
+    to_del = []
+    for i in range(len(possible_moves)):
+        curr = possible_moves[i]
+        if (no_neighbors_within_n(curr, valid_neighbor_distance)):
+            to_del.append(i)
+    # do deletions
+    num_del = 0
+    for i in range(len(to_del)):
+        del possible_moves[to_del[i] - num_del]
+        num_del += 1
+
+    return possible_moves
+
+def no_neighbors_within_n(node, n):
+    row = node.position[0]
+    col = node.position[1]
+    for i in range(-1*n, n+1):
+        for j in range(-1*n, n+1):
+            if (0<=row+i and row+i<board_size) and (0<=col+j and col+j<board_size):
+                if not is_empty(col+j, row+i):
+                    return False
+    return True
 
 
+#returns heuristic for 1 player for a given board
+def calculate_runs_value(me):
 
-#calculate heuristics
-#determine possible moves
+   player = 0
+   if (me):
+       player = PLAYER
+   else:
+       player = OPPONENT
+
+   run_weights = {2: 1, 3: 100, 4: 1000, 5:100000}
+
+    #potentially make global var
+   player_positions = []
+   # iterate over board to find player positions
+   for i in range(board_size):
+       for j in range(board_size):
+           if (board[i][j] == player):
+               player_positions.append([i,j])
+
+   # iterate over player positions
+   # for each position go in the 8 directions and check if there is a run
+   runs = []
+   for i in range(len(player_positions)):
+       curr_pos = player_positions[i]
+       curr_runs = calculate_runs(curr_pos, player)
+
+       for run in curr_runs:
+           runs.append(run)
+
+   #return runs
+   h = 0
+   for run in runs:
+       h = h + run_weights[len(run)]
+
+   return h
+
+
+#pos[0] = row, pos[1] = col
+def calculate_runs(pos, player):
+   runs = []
+   for dir in dirs:
+       curr_pos = pos
+       curr_run = []
+       curr_run.append(pos)
+
+       while (True):
+           n_pos = next_pos(curr_pos, dir)
+           if (n_pos == INVALID):
+               break
+           if (board[n_pos[0]][n_pos[1]] == player):
+               curr_run.append(n_pos)
+               curr_pos = n_pos
+           else:
+               break
+
+       if (len(curr_run) > 1):
+           runs.append(curr_run)
+
+   return runs
+
+def next_pos(pos, dir):
+   n_pos = [0,0]
+   if (dir == "left"):
+       n_pos = [pos[0],pos[1]-1]
+   elif (dir == "up-left"):
+       n_pos = [pos[0]-1, pos[1]-1]
+   elif (dir == "up"):
+       n_pos = [pos[0]-1, pos[1]]
+   elif (dir == "up-right"):
+       n_pos = [pos[0]-1, pos[1]+1]
+   elif (dir == "right"):
+       n_pos = [pos[0], pos[1]+1]
+   elif (dir == "down-right"):
+       n_pos = [pos[0]+1, pos[1]+1]
+   elif (dir == "down"):
+       n_pos = [pos[0]+1, pos[1]]
+   elif (dir == "down-left"):
+       n_pos = [pos[0]+1, pos[1]-1]
+
+   if not ((0 <= n_pos[0] and n_pos[0] <= board_size-1) and (0 <= n_pos[1] and n_pos[1] <= board_size-1)):
+       n_pos = INVALID
+
+   return n_pos
 
 def main():
     global EMPTY
@@ -175,9 +338,15 @@ def main():
     parse()
     makeBoard(board_size)
     print_board()
-    while True:
+    while True: #while game is in play
         if curr_turn == PLAYER:
-            rand_move()
+
+            possible_moves = findPossibleMoves()
+            for move in possible_moves:
+                print "Position: ", move.position
+                cost = minimax(move)
+                print "Cost: ", cost
+            next_move()
             print_board()
             curr_turn = OPPONENT
         if curr_turn == OPPONENT:
