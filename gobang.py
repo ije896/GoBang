@@ -117,19 +117,26 @@ def rand_move():
         correct_move = is_empty(column, row)
     board[row][column] = curr_turn
     move_played = str(unichr(column + 97)) + str(row + 1)
-    print "Move played: ", move_played
+    sys.stdout.flush()
+    print_board()
+    print "Move played:", move_played
+    sys.stdout.flush()
 
 #read player's move
+#TODO: check for incorrect inputs
 def read_move():
     move = raw_input("Enter move: ")
     column = ord(move[0]) - 97
     row = int(move[1:])-1
     while not is_empty(column, row):
-        move = raw_input("Incorrect move. Try again ")
+        move = raw_input("Incorrect move. Try again: ")
         column = ord(move[0]) - 97
         row = int(move[1:]) - 1
     board[row][column] = curr_turn
-    print "Move played: ", move
+    print_board()
+    sys.stdout.flush()
+    print "Move played:",move
+    sys.stdout.flush()
 
 
 def minimax(node):
@@ -215,24 +222,39 @@ def minimax(node):
 
 
 def next_move():
-    #if empty board, go to center of board
+    global PLAYER
+    global numTurns
     global curr_turn
-    moves = {}
-    possible_moves = findPossibleMoves()
-    for move in possible_moves: #requires that move be a node in the list possible moves
-        cost = minimax(move)
-        moves[move.position] = cost
-    max = -999999
-    best_move = None
-    for key, value in moves.iteritems():
-        if value>max:
-            best_move = key
-            max = value
-    row = best_move[0]
-    col = best_move[1]
-    board[row][col] = curr_turn
-    move_played = str(unichr(col+97)) + str(row+1)
-    print "Move played: ", move_played
+    #if PLAYER == LIGHT
+    #print
+    if numTurns == 0:
+        row = board_size/2
+        col = board_size/2
+        board[row][col] = curr_turn
+        move_played = str(unichr(col + 97)) + str(row + 1)
+        sys.stdout.flush()
+        print "Move played:",move_played
+        sys.stdout.flush()
+    else:
+        moves = {}
+        possible_moves = findPossibleMoves()
+        for move in possible_moves:
+            cost = minimax(move)
+            moves[move.position] = cost
+        max = -999999
+        best_move = None
+        for key, value in moves.iteritems():
+            if value>max:
+                best_move = key
+                max = value
+        row = best_move[0]
+        col = best_move[1]
+        board[row][col] = curr_turn
+        move_played = str(unichr(col+97)) + str(row+1)
+        print_board()
+        sys.stdout.flush()
+        print "Move played:",move_played
+        sys.stdout.flush()
 
 
 def findPossibleMoves():
@@ -244,9 +266,8 @@ def findPossibleMoves():
     global valid_neighbor_distance
     for i in range(0, board_size):
         for j in range(0, board_size):
-            if is_empty(j, i):                              #try hardcoding this DELETE MY NOTE ISAIAH
+            if is_empty(j, i):
                 node = Node(i, j)
-                node.heuristic = -9999 #TODO, calculate runs, add children nodes
                 possible_moves.append(node)
     to_del = []
     for i in range(len(possible_moves)):
@@ -356,17 +377,14 @@ def next_pos(pos, dir):
 
    return n_pos
 
-def check_if_draw():
-    for i in range(board_size):
-        for j in range(board_size):
-            if is_empty(j, i):
-                return False
-    return True
-
 def is_over():
-    if numTurns < board_size * board_size:
-        return False
-    return True
+    if numTurns == board_size * board_size:
+        sys.stdout.flush()
+        print "Draw!"
+        sys.stdout.flush()
+        return True
+
+    return False
 
 
 
@@ -379,20 +397,23 @@ def main():
     print_board()
     while not is_over(): #while game is in play
         if curr_turn == PLAYER:
-            possible_moves = findPossibleMoves()
+            """possible_moves = findPossibleMoves()
             for move in possible_moves:
                 print "Position: ", move.position
                 cost = minimax(move)
-                print "Cost: ", cost
-
+                print "Cost: ", cost"""
+            sys.stdout.flush()
+            #if curr_turn =
+            print "Deciding next turn..."
+            sys.stdout.flush()
             next_move()
-            print_board()
             curr_turn = OPPONENT
             numTurns+=1
+            sys.stdout.flush()
         if curr_turn == OPPONENT:
+            sys.stdout.flush()
             read_move()
-            print_board()
             curr_turn = PLAYER
             numTurns+=1
-
+            sys.stdout.flush()
 main()
