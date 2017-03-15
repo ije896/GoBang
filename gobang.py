@@ -128,7 +128,7 @@ def read_move():
     move = raw_input("Enter move: ")
     column = ord(move[0]) - 97
     row = int(move[1:])-1
-    while not is_empty(column, row):
+    while not is_empty(column, row) or column>=board_size or row>=board_size:
         move = raw_input("Incorrect move. Try again: ")
         column = ord(move[0]) - 97
         row = int(move[1:]) - 1
@@ -141,13 +141,9 @@ def read_move():
 
 def minimax(node):
     global choice
-    maxtotal = -99999
-    #modify board, calculate heuristic
-
     #calulate heuristics for game tree of depth 2
     row = node.position[0]
     col = node.position[1]
-    #print "entered minimax at pos: ", row, ", ", col
     board[row][col] = PLAYER
     node.heuristic = calculate_runs_value(PLAYER)
     #print "calculate_runs_value(PLAYER): ", calculate_runs_value(PLAYER)
@@ -157,14 +153,7 @@ def minimax(node):
         ch_row = node.children[child].position[0]
         ch_col = node.children[child].position[1]
         board[ch_row][ch_col] = OPPONENT
-        #print "board for depth 1 search: "
-        #print_board()
-        #print "calculate_runs_value(OPPONENT): ", calculate_runs_value(OPPONENT)
         node.children[child].heuristic = calculate_runs_value(OPPONENT)
-        #print "node.children[child].position: ", node.children[child].position
-        #print node.children[child].heuristic
-        #if node.children[child].heuristic > 9999:
-        #    print "Node at depth 1, position: ", node.children[child].position
         """
         node.children[child].children = findPossibleMoves()
 
@@ -177,10 +166,10 @@ def minimax(node):
             """
         board[ch_row][ch_col] = EMPTY
     board[row][col] = EMPTY
-
+    """
     opp_max = 999999
     temp = 0
-    """
+
     for child_ndx in range(0, len(node.children)):
         curr = node.children[child_ndx]
 
@@ -200,25 +189,6 @@ def minimax(node):
     node.total_heuristic = node.heuristic - child_sum
     return node.total_heuristic
 
-
-
-
-    """
-    #calculate total heuristic for move
-    for child in range(0, len(node.children)):
-        curr = node.children[child]
-        submax = curr.children[0]
-        for subchild in range(0, len(curr.children)):
-            if curr.children[subchild].heuristic > submax.heuristic:
-                submax = curr.children[subchild]
-        curr.total_heuristic = submax.heuristic - curr.heuristic
-        if curr.total_heuristic > maxtotal:
-            maxtotal = curr.total_heuristic
-            choice = curr
-    total_move_value = node.heuristic + maxtotal
-
-    return total_move_value
-     """
 
 
 def next_move():
@@ -241,7 +211,7 @@ def next_move():
         for move in possible_moves:
             cost = minimax(move)
             moves[move.position] = cost
-        max = -999999
+        max = -99999999999999
         best_move = None
         for key, value in moves.iteritems():
             if value>max:
@@ -295,14 +265,26 @@ def no_neighbors_within_n(node, n):
 
 #returns heuristic for 1 player for a given board
 def calculate_runs_value(me):
-
+   run_weights = {}
    player = 0
    if (me == PLAYER):
        player = PLAYER
+       run_weights[2] = 1
+       run_weights[3] = 10000
+       run_weights[4] = 100000
+       #run_weights[30] = 10000000
+       for x in range(5, 25):
+           run_weights[x] = 1000000
    else:
        player = OPPONENT
+       run_weights[2] = 1
+       run_weights[3] = 100000
+       run_weights[4] = 1000000
+       #run_weights[30] = 10000000
+       for x in range(5, 25):
+           run_weights[x] = 10000000
 
-   run_weights = {2: 1, 3: 100, 4: 1000, 5:100000}
+
 
     #potentially make global var
    player_positions = []
@@ -383,7 +365,6 @@ def is_over():
         print "Draw!"
         sys.stdout.flush()
         return True
-
     return False
 
 
