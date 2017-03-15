@@ -106,21 +106,6 @@ def is_empty(column, row):
     else:
         return False
 
-#computer's move
-def rand_move():
-    column = random.randint(0, board_size-1)
-    row = random.randint(0, board_size-1)
-    correct_move = is_empty(column, row)
-    while not correct_move:
-        column = random.randint(0, board_size-1)
-        row = random.randint(0, board_size-1)
-        correct_move = is_empty(column, row)
-    board[row][column] = curr_turn
-    move_played = str(unichr(column + 97)) + str(row + 1)
-    sys.stdout.flush()
-    print_board()
-    print "Move played:", move_played
-    sys.stdout.flush()
 
 #read player's move
 #TODO: check for incorrect inputs
@@ -154,34 +139,9 @@ def minimax(node):
         ch_col = node.children[child].position[1]
         board[ch_row][ch_col] = OPPONENT
         node.children[child].heuristic = calculate_runs_value(OPPONENT)
-        """
-        node.children[child].children = findPossibleMoves()
-
-        for subchild in range(len(node.children[child].children)):
-            subch_row = node.children[child].children[subchild].position[0]
-            subch_col = node.children[child].children[subchild].position[1]
-            board[subch_row][subch_col] = PLAYER
-            node.children[child].children[subchild].heuristic = calculate_runs_value(PLAYER)
-            board[subch_row][subch_col] = EMPTY
-            """
         board[ch_row][ch_col] = EMPTY
     board[row][col] = EMPTY
-    """
-    opp_max = 999999
-    temp = 0
 
-    for child_ndx in range(0, len(node.children)):
-        curr = node.children[child_ndx]
-
-        for depth2_ndx in range(0, len(curr.children)):
-            temp = -1 * curr.heuristic
-            temp = temp + curr.children[depth2_ndx].heuristic
-
-            if (temp < opp_max):
-                opp_max = temp
-    node.total_heuristic = node.heuristic + opp_max
-    return node.total_heuristic
-    """
     child_sum = 0
     for index in range(0, len(node.children)):
         curr = node.children[index]
@@ -378,11 +338,6 @@ def main():
     print_board()
     while not is_over(): #while game is in play
         if curr_turn == PLAYER:
-            """possible_moves = findPossibleMoves()
-            for move in possible_moves:
-                print "Position: ", move.position
-                cost = minimax(move)
-                print "Cost: ", cost"""
             sys.stdout.flush()
             #if curr_turn =
             print "Deciding next turn..."
